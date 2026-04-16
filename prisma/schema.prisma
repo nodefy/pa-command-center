@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id               String    @id @default(uuid())
+  name             String
+  settings         Json      @default("{}")
+  subscriptionTier String    @default("starter") @map("subscription_tier")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  clients          Client[]
+
+  @@map("organizations")
+}
+
+model Client {
+  id               String       @id @default(uuid())
+  organizationId   String       @map("organization_id")
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  name             String
+  company          String?
+  emailDomain      String?      @map("email_domain")
+  color            String       @default("#1B4F72")
+  logoUrl          String?      @map("logo_url")
+  settings         Json         @default("{}")
+  onboardingStatus String       @default("active") @map("onboarding_status")
+  monthlyPackage   String       @default("starter") @map("monthly_package")
+  contractStart    DateTime?    @map("contract_start")
+  contractEnd      DateTime?    @map("contract_end")
+  notes            String?
+  archivedAt       DateTime?    @map("archived_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  tasks            Task[]
+  activityLogs     ActivityLog[]
+  timeEntries      TimeEntry[]
+
+  @@map("clients")
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  clientId    String      @map("client_id")
+  client      Client      @relation(fields: [clientId], references: [id])
+  title       String
+  description String?
+  status      String      @default("todo")
+  priority    String      @default("normal")
+  dueDate     DateTime?   @map("due_date")
+  estimatedMinutes Int?   @map("estimated_minutes")
+  source      String      @default("manual")
+  sourceRef   String?     @map("source_ref")
+  tags        String[]    @default([])
+  createdAt   DateTime    @default(now()) @map("created_at")
+  completedAt DateTime?   @map("completed_at")
+  timeEntries TimeEntry[]
+
+  @@map("tasks")
+}
+
+model TimeEntry {
+  id          String   @id @default(uuid())
+  clientId    String   @map("client_id")
+  client      Client   @relation(fields: [clientId], references: [id])
+  taskId      String?  @map("task_id")
+  task        Task?    @relation(fields: [taskId], references: [id])
+  description String?
+  minutes     Int      @default(0)
+  billable    Boolean  @default(true)
+  category    String   @default("general")
+  startedAt   DateTime @map("started_at")
+  endedAt     DateTime? @map("ended_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("time_entries")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  clientId    String?  @map("client_id")
+  client      Client?  @relation(fields: [clientId], references: [id])
+  actionType  String   @map("action_type")
+  description String?
+  entityType  String?  @map("entity_type")
+  entityId    String?  @map("entity_id")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([clientId])
+  @@index([createdAt])
+  @@map("activity_log")
+}
